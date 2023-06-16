@@ -90,7 +90,7 @@ func TestIsUserExist(t *testing.T){
     _dolpin := dolpin.New(dolpin.Config{
         MockFolder: "/mocks"
     })
-    // prepare function is for calling moc
+    // prepare function is for calling mock
     _dolpin.CallFunction("GetUserById", dolpin.Args(dolpin.Anything), dolpin.Results(nil))
 
     // prepare arg and expect value 
