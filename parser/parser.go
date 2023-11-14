@@ -8,17 +8,33 @@ import (
 	"strings"
 
 	"github.com/born2ngopi/dolpin/generator"
+	"github.com/pterm/pterm"
 	"golang.org/x/mod/modfile"
 )
 
 // GenerateTest is used to auto generate test for golang code.
 func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error {
+	logger := pterm.DefaultLogger.
+		WithLevel(pterm.LogLevelTrace)
+
+	_getDir, _ := pterm.DefaultSpinner.Start("Getting directory")
 	modulePath, projectDir, err := getDir(dir)
 	if err != nil {
 		return err
 	}
+	_getDir.InfoPrinter = &pterm.PrefixPrinter{
+		MessageStyle: &pterm.Style{pterm.FgLightBlue},
+		Prefix: pterm.Prefix{
+			Style: &pterm.Style{pterm.FgBlack, pterm.BgLightBlue},
+			Text:  " USING ",
+		},
+	}
+	_getDir.Info(fmt.Sprintf("Modulepath: %s | Projectdir : %s", modulePath, projectDir))
 
 	if funcName != "" {
+		singgleSpinner, _ := pterm.DefaultSpinner.Start("Generate Singgle Unit Test ....")
+
+		logger.Info("reading file to prompt")
 		// genereate singgle unit test
 		_prompts, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockDir)
 		if err != nil {
@@ -26,9 +42,11 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 		}
 
 		if len(_prompts) == 0 {
+			singgleSpinner.Fail(fmt.Sprintf("function %s not found", funcName))
 			return fmt.Errorf("function %s not found", funcName)
 		}
 
+		logger.Info("generate code completion....")
 		for _, prompt := range _prompts {
 
 			promptStr, err := prompt.Generate()
@@ -43,21 +61,26 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 			}
 		}
 
+		singgleSpinner.Success("Success generate singgle unit test")
+		return nil
+
 	}
 
+	multiSpinner, _ := pterm.DefaultSpinner.Start("Generate Multi Unit Test ....")
 	// walk through the directory
 	err = filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
 		// check if is not file and not .go extention
 		if info.IsDir() || filepath.Ext(path) != ".go" {
 			return nil
 		}
-
+		multiSpinner.UpdateText("Reading file to prompt....")
 		// parse the file
 		_prompts, err := readFileToPrompt(path, "", modulePath, dir, mockLib, mockDir)
 		if err != nil {
 			return err
 		}
 
+		multiSpinner.UpdateText("Generate code completion....")
 		for _, _prompt := range _prompts {
 
 			promptStr, err := _prompt.Generate()
@@ -71,16 +94,17 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 			if err != nil {
 				return err
 			}
-
-			// TODO: log success generate test
 		}
-
+		multiSpinner.UpdateText("Success create test")
+		logger.Info(fmt.Sprintf("Success create test for %s", path))
 		return nil
 	})
 	if err != nil {
+		multiSpinner.Fail("Failed to generate test")
 		return err
 	}
 
+	multiSpinner.Success("Success generate test")
 	return nil
 }
 

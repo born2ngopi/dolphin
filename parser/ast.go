@@ -56,9 +56,9 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 			body := funcDecl.Body
 
 			for _, stmt := range body.List {
-				if declStmt, ok := stmt.(*ast.DeclStmt); ok {
+				if _, ok := stmt.(*ast.DeclStmt); ok {
 
-					_structs, err := getStructFromStatement(declStmt, importPath)
+					_structs, err := getStructFromStatement(decl, importPath)
 					if err != nil {
 						return nil, err
 					}
