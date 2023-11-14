@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/born2ngopi/dolpin/generator"
 	"golang.org/x/mod/modfile"
 )
 
@@ -35,7 +36,11 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 				return err
 			}
 			fmt.Println(promptStr)
-			// TODO:  call the test generator
+
+			err = generateAddWriteTestFile(promptStr, output)
+			if err != nil {
+				return err
+			}
 		}
 
 	}
@@ -60,8 +65,14 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 				return err
 			}
 
-			fmt.Println(promptStr)
-			// TODO: call the test generator
+			outputPath := strings.Replace(path, ".go", "_test.go", 1)
+
+			err = generateAddWriteTestFile(promptStr, outputPath)
+			if err != nil {
+				return err
+			}
+
+			// TODO: log success generate test
 		}
 
 		return nil
@@ -69,6 +80,39 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func generateAddWriteTestFile(prompt string, outputPath string) error {
+	codeCompletion, err := generator.Generate(prompt)
+	if err != nil {
+		return err
+	}
+
+	var (
+		f *os.File
+	)
+
+	// check if the file exist
+	if _, err = os.Stat(outputPath); os.IsNotExist(err) {
+		// create the file
+		f, err = os.Create(outputPath)
+		if err != nil {
+			return err
+		}
+
+	} else {
+
+		f, err = os.OpenFile(outputPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	defer f.Close()
+
+	f.WriteString(codeCompletion)
 
 	return nil
 }

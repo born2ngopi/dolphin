@@ -15,10 +15,14 @@ func Execute() {
 		Use:   "generate",
 		Short: "generate a new unit test",
 		Run: func(cmd *cobra.Command, args []string) {
-			// dir, _ := cmd.Flags().GetString("dir")
-			// mockDir, _ := cmd.Flags().GetString("mockdir")
+			dir, _ := cmd.Flags().GetString("dir")
+			funcName, _ := cmd.Flags().GetString("func")
+			fileDir, _ := cmd.Flags().GetString("file")
+			mockLib, _ := cmd.Flags().GetString("mock-lib")
+			mockDir, _ := cmd.Flags().GetString("mock-path")
+			output, _ := cmd.Flags().GetString("output")
 
-			if err := parser.GenerateTest(".", "", "", "", ""); err != nil {
+			if err := parser.GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
@@ -28,7 +32,11 @@ func Execute() {
 	}
 
 	generateCmd.Flags().StringP("dir", "d", ".", "Specify the directory")
-	generateCmd.Flags().StringP("mockdir", "m", "./mocs", "Specify the mock directory")
+	generateCmd.Flags().StringP("func", "f", "", "Specify the function name")
+	generateCmd.Flags().StringP("file", "F", "", "Specify the file directory")
+	generateCmd.Flags().StringP("mock-lib", "ml", "", "Specify the mock library")
+	generateCmd.Flags().StringP("mock-path", "mp", "./mocs", "Specify the mock path")
+	generateCmd.Flags().StringP("output", "o", "", "Specify the output directory")
 
 	rootCmd.AddCommand(generateCmd)
 	if err := rootCmd.Execute(); err != nil {
