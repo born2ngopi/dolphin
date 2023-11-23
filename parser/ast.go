@@ -14,14 +14,14 @@ import (
 	"github.com/born2ngopi/dolpin/prompt"
 )
 
-func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) (prompts []prompt.Template, err error) {
+func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) (prompts []prompt.Template, packageName string, err error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	packageName := file.Name.Name
+	packageName = file.Name.Name
 
 	// prepare import path
 	importPath := make(map[string]string)
@@ -71,7 +71,7 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 
 									structs, err := getStructFromImportPackage(pathDir, selExp)
 									if err != nil {
-										return nil, err
+										return nil, packageName, err
 									}
 
 									_prompt.Structs = append(_prompt.Structs, structs...)
@@ -96,20 +96,15 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 			}
 			_prompt.Function = sourceCode
 
-			body := funcDecl.Body
+			_ = funcDecl.Body
 
-			for _, stmt := range body.List {
-				if _, ok := stmt.(*ast.DeclStmt); ok {
-
-					_structs, err := getStructFromStatement(decl, importPath)
-					if err != nil {
-						return nil, err
-					}
-					if _structs != nil {
-						_prompt.Structs = append(_prompt.Structs, _structs...)
-					}
-				}
-			}
+			// TODO: check if any struct usage on function body
+			// example:
+			// func (u *User) Get() {
+			// 		var user = user.User{}
+			// 		...
+			// }
+			// then we need to get struct from user.User{}
 
 			_prompt.Mock = prompt.Mock{
 				Name: mockLib,
@@ -121,7 +116,7 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 		}
 	}
 
-	return prompts, nil
+	return prompts, packageName, nil
 }
 
 func getStructFromImportPackage(pathDir string, selExp *ast.SelectorExpr) ([]prompt.Struct, error) {

@@ -32,11 +32,16 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 	_getDir.Info(fmt.Sprintf("Modulepath: %s | Projectdir : %s", modulePath, projectDir))
 
 	if funcName != "" {
+
+		err := prepareStruct(projectDir)
+		if err != nil {
+			return err
+		}
 		singgleSpinner, _ := pterm.DefaultSpinner.Start("Generate Singgle Unit Test ....")
 
 		logger.Info("reading file to prompt")
 		// genereate singgle unit test
-		_prompts, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockDir)
+		_prompts, packageName, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockDir)
 		if err != nil {
 			return err
 		}
@@ -54,7 +59,7 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 				return err
 			}
 
-			err = generateAddWriteTestFile(promptStr, model, output)
+			err = generateAddWriteTestFile(promptStr, model, output, packageName)
 			if err != nil {
 				return err
 			}
@@ -73,36 +78,38 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 		return err
 	}
 
+	multiSpinner.UpdateText("Generate code completion....")
 	// walk through the directory
 	err = filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
 		// check if is not file and not .go extention
 		if info.IsDir() || filepath.Ext(path) != ".go" {
 			return nil
 		}
-		multiSpinner.UpdateText("Reading file to prompt....")
+		// check if the file is test file
+		if strings.Contains(path, "_test.go") {
+			return nil
+		}
 		// parse the file
-		_prompts, err := readFileToPrompt(path, "", modulePath, dir, mockLib, mockDir)
+		_prompts, packageName, err := readFileToPrompt(path, "", modulePath, dir, mockLib, mockDir)
 		if err != nil {
 			return err
 		}
 
-		multiSpinner.UpdateText("Generate code completion....")
 		for _, _prompt := range _prompts {
 
 			promptStr, err := _prompt.Generate()
 			if err != nil {
-				fmt.Println("error dimari =>", err.Error())
 				return err
 			}
 
 			outputPath := strings.Replace(path, ".go", "_test.go", 1)
 
-			err = generateAddWriteTestFile(promptStr, model, outputPath)
+			err = generateAddWriteTestFile(promptStr, model, outputPath, packageName)
 			if err != nil {
 				return err
 			}
 		}
-		multiSpinner.UpdateText("Success create test")
+
 		logger.Info(fmt.Sprintf("Success create test for %s", path))
 		return nil
 	})
@@ -111,11 +118,20 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 		return err
 	}
 
+	multiSpinner.UpdateText("run go imports ....")
+	// run goimports
+	cmd := exec.Command("goimports", "-w", projectDir)
+	err = cmd.Run()
+	if err != nil {
+		multiSpinner.Fail("Failed to run goimports")
+		return err
+	}
+
 	multiSpinner.Success("Success generate test")
 	return nil
 }
 
-func generateAddWriteTestFile(prompt, model, outputPath string) error {
+func generateAddWriteTestFile(prompt, model, outputPath, packageName string) error {
 	codeCompletion, err := generator.Generate(prompt, model)
 	if err != nil {
 		return err
@@ -132,6 +148,8 @@ func generateAddWriteTestFile(prompt, model, outputPath string) error {
 		if err != nil {
 			return err
 		}
+
+		f.WriteString("package " + packageName + "\n\n")
 
 	} else {
 

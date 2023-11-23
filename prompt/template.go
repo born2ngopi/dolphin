@@ -26,7 +26,9 @@ type {{.Name}} struct {
 and i use mock {{.Name}} and the dir is {{.Dir}}
 {{end}}
 
-can you write unit test with heights coverage and looping test case , So there can be looping a positive case and a negative case for this function . And only return to me the function unit test without package name and import package?`
+and i have some template like this
+
+can you write unit test with heights coverage and looping test case like my template , So there can be looping a positive case and a negative case for this function . And only return to me the function unit test without package name and import package?`
 )
 
 type Template struct {

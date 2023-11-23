@@ -17,7 +17,9 @@ func Generate(prompt, model string) (string, error) {
 		model = "llama2"
 	}
 
-	llm, err := ollama.New(ollama.WithModel(model))
+	llm, err := ollama.New(
+		ollama.WithModel(model),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,9 +42,30 @@ func Generate(prompt, model string) (string, error) {
 	if strings.Contains(completion, "```") {
 		split := strings.Split(completion, "```")
 		if len(split) > 1 {
-			return split[1], nil
+
+			lines := strings.Split(split[1], "\n")
+
+			// Find the index where the test function starts
+			startIndex := findTestFunctionIndex(lines)
+
+			// Remove lines before the test function
+			if startIndex >= 0 {
+				lines = lines[startIndex:]
+			}
+
+			return strings.Join(lines, "\n"), nil
 		}
+
 	}
 
 	return completion, nil
+}
+
+func findTestFunctionIndex(lines []string) int {
+	for i, line := range lines {
+		if strings.Contains(line, "func Test") {
+			return i
+		}
+	}
+	return -1
 }
