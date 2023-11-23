@@ -13,7 +13,7 @@ import (
 )
 
 // GenerateTest is used to auto generate test for golang code.
-func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error {
+func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string) error {
 	logger := pterm.DefaultLogger.
 		WithLevel(pterm.LogLevelTrace)
 
@@ -53,9 +53,8 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 			if err != nil {
 				return err
 			}
-			fmt.Println(promptStr)
 
-			err = generateAddWriteTestFile(promptStr, output)
+			err = generateAddWriteTestFile(promptStr, model, output)
 			if err != nil {
 				return err
 			}
@@ -67,6 +66,13 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 	}
 
 	multiSpinner, _ := pterm.DefaultSpinner.Start("Generate Multi Unit Test ....")
+
+	multiSpinner.UpdateText("preparing struct .....")
+	err = prepareStruct(projectDir)
+	if err != nil {
+		return err
+	}
+
 	// walk through the directory
 	err = filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
 		// check if is not file and not .go extention
@@ -85,12 +91,13 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 
 			promptStr, err := _prompt.Generate()
 			if err != nil {
+				fmt.Println("error dimari =>", err.Error())
 				return err
 			}
 
 			outputPath := strings.Replace(path, ".go", "_test.go", 1)
 
-			err = generateAddWriteTestFile(promptStr, outputPath)
+			err = generateAddWriteTestFile(promptStr, model, outputPath)
 			if err != nil {
 				return err
 			}
@@ -108,8 +115,8 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output string) error
 	return nil
 }
 
-func generateAddWriteTestFile(prompt string, outputPath string) error {
-	codeCompletion, err := generator.Generate(prompt)
+func generateAddWriteTestFile(prompt, model, outputPath string) error {
+	codeCompletion, err := generator.Generate(prompt, model)
 	if err != nil {
 		return err
 	}
@@ -143,19 +150,23 @@ func generateAddWriteTestFile(prompt string, outputPath string) error {
 
 func getDir(dir string) (modulePath string, projectDir string, err error) {
 	modulePath = filepath.Join(dir, "go.mod")
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", "", err
+	}
+	modulePath = filepath.Join(pwd, modulePath)
 	// check if go.mod exist
 	if _, err := os.Stat(modulePath); os.IsNotExist(err) {
-
-		// get pwd
-		pwd, err := os.Getwd()
-		if err != nil {
-			return "", "", err
-		}
 
 		return "", pwd, nil
 	}
 
-	modFile, err := modfile.Parse(modulePath, nil, nil)
+	modfileBytes, err := os.ReadFile(modulePath)
+	if err != nil {
+		return "", "", err
+	}
+
+	modFile, err := modfile.Parse(modulePath, modfileBytes, nil)
 	if err != nil {
 		return "", "", err
 	}
@@ -163,7 +174,6 @@ func getDir(dir string) (modulePath string, projectDir string, err error) {
 	modulePath = modFile.Module.Mod.Path
 
 	// get project dir
-
 	cmd := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", modulePath)
 
 	output, err := cmd.CombinedOutput()

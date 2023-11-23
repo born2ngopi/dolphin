@@ -22,7 +22,7 @@ type {{.Name}} struct {
   {{end}}
 {{end}}
 
-{{with .Mocks}}
+{{with .Mock}}
 and i use mock {{.Name}} and the dir is {{.Dir}}
 {{end}}
 

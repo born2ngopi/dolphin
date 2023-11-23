@@ -10,9 +10,14 @@ import (
 	"github.com/tmc/langchaingo/llms/ollama"
 )
 
-func Generate(prompt string) (string, error) {
+func Generate(prompt, model string) (string, error) {
 
-	llm, err := ollama.New(ollama.WithModel("llama2"))
+	if model == "" {
+		// default model is llama2
+		model = "llama2"
+	}
+
+	llm, err := ollama.New(ollama.WithModel(model))
 	if err != nil {
 		log.Fatal(err)
 	}

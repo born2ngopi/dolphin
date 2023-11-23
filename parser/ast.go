@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/born2ngopi/dolpin/prompt"
 )
@@ -20,6 +21,8 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 		log.Fatal(err)
 	}
 
+	packageName := file.Name.Name
+
 	// prepare import path
 	importPath := make(map[string]string)
 
@@ -28,7 +31,12 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 			if genDecl.Tok == token.IMPORT {
 				for _, spec := range genDecl.Specs {
 					if importSpec, ok := spec.(*ast.ImportSpec); ok {
-						importPath[importSpec.Name.Name] = importSpec.Path.Value
+						if importSpec.Name != nil {
+							importPath[importSpec.Name.Name] = importSpec.Path.Value
+						} else {
+							_importPath := strings.ReplaceAll(filepath.Base(importSpec.Path.Value), "\"", "")
+							importPath[_importPath] = importSpec.Path.Value
+						}
 					}
 				}
 			}
@@ -44,6 +52,41 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 			}
 
 			var _prompt prompt.Template
+
+			if funcDecl.Type.Params != nil {
+				for _, field := range funcDecl.Type.Params.List {
+					// check if type variable is struct
+					if field.Type != nil {
+						if selExp, ok := field.Type.(*ast.SelectorExpr); ok {
+
+							// check if struct is from import
+							if ident, ok := selExp.X.(*ast.Ident); ok {
+								if importPath[ident.Name] != "" {
+
+									// adding gopath with import path
+									gopath := os.Getenv("GOPATH")
+
+									pathDir := strings.ReplaceAll(importPath[ident.Name], "\"", "")
+									pathDir = gopath + "/src/" + pathDir
+
+									structs, err := getStructFromImportPackage(pathDir, selExp)
+									if err != nil {
+										return nil, err
+									}
+
+									_prompt.Structs = append(_prompt.Structs, structs...)
+
+								}
+							}
+						} else if selExp, ok := field.Type.(*ast.Ident); ok {
+							// check if struct is from same file or sampe package
+							if _struct, ok := Struct[packageName+selExp.Name]; ok {
+								_prompt.Structs = append(_prompt.Structs, _struct)
+							}
+						}
+					}
+				}
+			}
 
 			// read function code
 			sourceCode := getSourceCode(funcDecl.Pos(), funcDecl.End(), fset)
@@ -79,6 +122,51 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 	}
 
 	return prompts, nil
+}
+
+func getStructFromImportPackage(pathDir string, selExp *ast.SelectorExpr) ([]prompt.Struct, error) {
+
+	var structs []prompt.Struct
+
+	err := filepath.Walk(pathDir, func(path string, info os.FileInfo, _ error) error {
+
+		if info.IsDir() || filepath.Ext(path) != ".go" {
+			return nil
+		}
+
+		importFile, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ParseComments)
+		if err != nil {
+			return err
+		}
+
+		structName := selExp.Sel.Name
+
+		if _struct, ok := Struct[structName]; ok {
+			structs = append(structs, _struct)
+		} else {
+
+			structFieldMap := findStructFields(importFile, structName)
+
+			_struct := prompt.Struct{
+				Name: structName,
+			}
+			if len(structFieldMap) > 0 {
+				for fieldName, fieldType := range structFieldMap {
+					_struct.Fields = append(_struct.Fields, prompt.StructField{
+						Name: fieldName,
+						Type: fieldType,
+					})
+				}
+			}
+
+			Struct[structName] = _struct
+			structs = append(structs, _struct)
+		}
+
+		return nil
+	})
+
+	return structs, err
 }
 
 // getStructFromStatement is a function to get struct declaration from statement
