@@ -2,46 +2,31 @@ package generator
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
-	"github.com/tmc/langchaingo/llms/local"
-)
-
-var (
-	bin         = os.Getenv("LOCAL_LLM_BIN")
-	model       = os.Getenv(("LOCAL_LLM_MODEL"))
-	gpuLayers   = os.Getenv(("LOCAL_LLM_NUM_GPU_LAYERS"))
-	threads     = os.Getenv(("LOCAL_LLM_NUM_CPU_CORES"))
-	contextSize = os.Getenv(("LOCAL_LLM_CONTEXT"))
+	"github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/ollama"
 )
 
 func Generate(prompt string) (string, error) {
 
-	wd, err := os.Getwd()
+	llm, err := ollama.New(ollama.WithModel("llama2"))
 	if err != nil {
-		log.Fatal("Error getting current directory")
+		log.Fatal(err)
 	}
+	ctx := context.Background()
 
-	bin := fmt.Sprintf("%s/%s", wd, bin)
-	args := fmt.Sprintf("-m %s/%s -t %s --temp 0 -eps 1e-5 -c %s -ngl %s -p",
-		wd, model, threads, contextSize, gpuLayers)
-
-	llm, err := local.New(
-		local.WithBin(bin),
-		local.WithArgs(args),
+	completion, err := llm.Call(ctx, prompt,
+		llms.WithTemperature(0.8),
+		llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
+			fmt.Print(string(chunk))
+			return nil
+		}),
 	)
 	if err != nil {
-		return "", errors.New("cannot create local LLM")
-	}
-
-	completion, err := llm.Call(context.Background(), prompt)
-	if err != nil {
-		log.Println("Cannot get completion:", err.Error())
-		return "", errors.New("cannot get completion")
+		log.Fatal(err)
 	}
 
 	// remove the question if it appears in the response
