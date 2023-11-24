@@ -41,28 +41,19 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 
 		logger.Info("reading file to prompt")
 		// genereate singgle unit test
-		_prompts, packageName, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockDir)
+		_prompt, packageName, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockDir)
 		if err != nil {
 			return err
 		}
 
-		if len(_prompts) == 0 {
-			singgleSpinner.Fail(fmt.Sprintf("function %s not found", funcName))
-			return fmt.Errorf("function %s not found", funcName)
+		promptStr, err := _prompt.Generate()
+		if err != nil {
+			return err
 		}
 
-		logger.Info("generate code completion....")
-		for _, prompt := range _prompts {
-
-			promptStr, err := prompt.Generate()
-			if err != nil {
-				return err
-			}
-
-			err = generateAddWriteTestFile(promptStr, model, output, packageName)
-			if err != nil {
-				return err
-			}
+		err = generateAddWriteTestFile(promptStr, model, output, packageName)
+		if err != nil {
+			return err
 		}
 
 		singgleSpinner.Success("Success generate singgle unit test")
@@ -90,24 +81,25 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 			return nil
 		}
 		// parse the file
-		_prompts, packageName, err := readFileToPrompt(path, "", modulePath, dir, mockLib, mockDir)
+		_prompt, packageName, err := readFileToPrompt(path, "", modulePath, dir, mockLib, mockDir)
 		if err != nil {
 			return err
 		}
 
-		for _, _prompt := range _prompts {
+		if _prompt.SourceCode == "" {
+			return nil
+		}
 
-			promptStr, err := _prompt.Generate()
-			if err != nil {
-				return err
-			}
+		promptStr, err := _prompt.Generate()
+		if err != nil {
+			return err
+		}
 
-			outputPath := strings.Replace(path, ".go", "_test.go", 1)
+		outputPath := strings.Replace(path, ".go", "_test.go", 1)
 
-			err = generateAddWriteTestFile(promptStr, model, outputPath, packageName)
-			if err != nil {
-				return err
-			}
+		err = generateAddWriteTestFile(promptStr, model, outputPath, packageName)
+		if err != nil {
+			return err
 		}
 
 		logger.Info(fmt.Sprintf("Success create test for %s", path))

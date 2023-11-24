@@ -6,39 +6,50 @@ import (
 )
 
 const (
-	PROMPT = `i have a function like this
+	PROMPT = `can u write unit test on golang with heights coverage and multi scenario for this code
 
-{{.Function}}
+{{.SourceCode}}
 
 {{with .Structs}}
-and i have a struct like this
+and i have some struct like this
 
-  {{range .}}
+{{range .}}
 type {{.Name}} struct {
-  {{range .Fields}}
-  {{.Name}} {{.Type}}
-  {{end}}
+	{{range .Fields}}
+	{{.Name}} {{.Type}}
+	{{end}}
 }
-  {{end}}
+from {{.From}}
+{{end}}
+
 {{end}}
 
 {{with .Mock}}
 and i use mock {{.Name}} and the dir is {{.Dir}}
 {{end}}
 
-and i have some template like this
+i expect the unit test like this
+func Test_[function_name](t *testing.T) {
 
-can you write unit test with heights coverage and looping test case like my template , So there can be looping a positive case and a negative case for this function . And only return to me the function unit test without package name and import package?`
+	// add some preparation code here
+
+	// add schenario here with []struct
+
+	// looping schenario here and test the function
+}
+	`
 )
 
 type Template struct {
-	Function string
-	Structs  []Struct
-	Mock     Mock
+	// Function string
+	SourceCode string
+	Structs    []Struct
+	Mock       Mock
 }
 
 type Struct struct {
 	Name   string
+	From   string
 	Fields []StructField
 }
 

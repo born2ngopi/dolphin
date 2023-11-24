@@ -14,7 +14,7 @@ import (
 	"github.com/born2ngopi/dolpin/prompt"
 )
 
-func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) (prompts []prompt.Template, packageName string, err error) {
+func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) (promptResult prompt.Template, packageName string, err error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
@@ -22,6 +22,12 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 	}
 
 	packageName = file.Name.Name
+
+	// get source code
+	sourceCode := getSourceCode(file.Pos(), file.End(), fset)
+	if sourceCode != "" {
+		promptResult.SourceCode = sourceCode
+	}
 
 	// prepare import path
 	importPath := make(map[string]string)
@@ -43,15 +49,15 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 		}
 	}
 
+	var isAnyFunc bool
 	// check function
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			isAnyFunc = true
 
 			if funcName != "" && funcName != funcDecl.Name.Name {
 				continue
 			}
-
-			var _prompt prompt.Template
 
 			if funcDecl.Type.Params != nil {
 				for _, field := range funcDecl.Type.Params.List {
@@ -69,57 +75,42 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 									pathDir := strings.ReplaceAll(importPath[ident.Name], "\"", "")
 									pathDir = gopath + "/src/" + pathDir
 
-									structs, err := getStructFromImportPackage(pathDir, selExp)
+									structs, err := getStructFromImportPackage(pathDir, importPath[ident.Name], selExp)
 									if err != nil {
-										return nil, packageName, err
+										return promptResult, packageName, err
 									}
 
-									_prompt.Structs = append(_prompt.Structs, structs...)
+									promptResult.Structs = append(promptResult.Structs, structs...)
 
 								}
 							}
 						} else if selExp, ok := field.Type.(*ast.Ident); ok {
 							// check if struct is from same file or sampe package
 							if _struct, ok := Struct[packageName+selExp.Name]; ok {
-								_prompt.Structs = append(_prompt.Structs, _struct)
+								_struct.From = "same package"
+								promptResult.Structs = append(promptResult.Structs, _struct)
 							}
 						}
 					}
 				}
 			}
 
-			// read function code
-			sourceCode := getSourceCode(funcDecl.Pos(), funcDecl.End(), fset)
-			// read code on this line
-			if sourceCode == "" {
-				continue
-			}
-			_prompt.Function = sourceCode
-
-			_ = funcDecl.Body
-
-			// TODO: check if any struct usage on function body
-			// example:
-			// func (u *User) Get() {
-			// 		var user = user.User{}
-			// 		...
-			// }
-			// then we need to get struct from user.User{}
-
-			_prompt.Mock = prompt.Mock{
+			promptResult.Mock = prompt.Mock{
 				Name: mockLib,
 				Dir:  mockDir,
 			}
 
-			prompts = append(prompts, _prompt)
-
 		}
 	}
 
-	return prompts, packageName, nil
+	if !isAnyFunc {
+		promptResult.SourceCode = ""
+	}
+
+	return promptResult, packageName, nil
 }
 
-func getStructFromImportPackage(pathDir string, selExp *ast.SelectorExpr) ([]prompt.Struct, error) {
+func getStructFromImportPackage(pathDir string, importPath string, selExp *ast.SelectorExpr) ([]prompt.Struct, error) {
 
 	var structs []prompt.Struct
 
@@ -137,6 +128,7 @@ func getStructFromImportPackage(pathDir string, selExp *ast.SelectorExpr) ([]pro
 		structName := selExp.Sel.Name
 
 		if _struct, ok := Struct[structName]; ok {
+			_struct.From = importPath
 			structs = append(structs, _struct)
 		} else {
 
@@ -155,6 +147,7 @@ func getStructFromImportPackage(pathDir string, selExp *ast.SelectorExpr) ([]pro
 			}
 
 			Struct[structName] = _struct
+			_struct.From = importPath
 			structs = append(structs, _struct)
 		}
 

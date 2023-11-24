@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strings"
 
@@ -27,10 +26,10 @@ func Generate(prompt, model string) (string, error) {
 
 	completion, err := llm.Call(ctx, prompt,
 		llms.WithTemperature(0.8),
-		llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
-			fmt.Print(string(chunk))
-			return nil
-		}),
+		// llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
+		// 	fmt.Print(string(chunk))
+		// 	return nil
+		// }),
 	)
 	if err != nil {
 		log.Fatal(err)
