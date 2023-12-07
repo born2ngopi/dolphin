@@ -13,12 +13,12 @@ import (
 )
 
 // GenerateTest is used to auto generate test for golang code.
-func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string) error {
+func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, model string) error {
 	logger := pterm.DefaultLogger.
 		WithLevel(pterm.LogLevelTrace)
 
 	_getDir, _ := pterm.DefaultSpinner.Start("Getting directory")
-	modulePath, projectDir, err := getDir(dir)
+	modulePath, projectDir, err := getDir(rootDir)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,13 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 			Text:  " USING ",
 		},
 	}
+
 	_getDir.Info(fmt.Sprintf("Modulepath: %s | Projectdir : %s", modulePath, projectDir))
+	//if rootDir != "." {
+	dir = filepath.Join(projectDir, dir)
+	fileDir = filepath.Join(projectDir, fileDir)
+	mockDir = filepath.Join(modulePath, mockDir)
+	output = filepath.Join(projectDir, output)
 
 	if funcName != "" {
 
@@ -71,7 +77,7 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 
 	multiSpinner.UpdateText("Generate code completion....")
 	// walk through the directory
-	err = filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		// check if is not file and not .go extention
 		if info.IsDir() || filepath.Ext(path) != ".go" {
 			return nil
@@ -94,6 +100,9 @@ func GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model string
 		if err != nil {
 			return err
 		}
+
+		fmt.Println(promptStr)
+		return nil
 
 		outputPath := strings.Replace(path, ".go", "_test.go", 1)
 

@@ -22,8 +22,9 @@ func Execute() {
 			mockDir, _ := cmd.Flags().GetString("mock-path")
 			output, _ := cmd.Flags().GetString("output")
 			model, _ := cmd.Flags().GetString("model")
+			rootDir, _ := cmd.Flags().GetString("root-dir")
 
-			if err := parser.GenerateTest(dir, funcName, fileDir, mockLib, mockDir, output, model); err != nil {
+			if err := parser.GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, model); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
@@ -39,6 +40,7 @@ func Execute() {
 	generateCmd.Flags().StringP("mock-path", "M", "./mocs", "Specify the mock path")
 	generateCmd.Flags().StringP("output", "o", "", "Specify the output directory")
 	generateCmd.Flags().String("model", "llama2", "Specify the model")
+	generateCmd.Flags().StringP("root-dir", "r", ".", "Specify the root directory")
 
 	rootCmd.AddCommand(generateCmd)
 	if err := rootCmd.Execute(); err != nil {

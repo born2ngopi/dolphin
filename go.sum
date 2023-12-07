@@ -88,6 +88,8 @@ github.com/tmc/langchaingo v0.0.0-20231110174329-09a09b3b6093 h1:ULwETFEVW1M3RxJ
 github.com/tmc/langchaingo v0.0.0-20231110174329-09a09b3b6093/go.mod h1:wwzKIaam0XFmiWfTlvSvdKwq7CkxE9Tz5rIkz1KKDws=
 github.com/tmc/langchaingo v0.0.0-20231122191601-2eb6f5408849 h1:p0VIrm426HBxEoGal2oZU/1MUThZioXgqs8Kdyk0q/k=
 github.com/tmc/langchaingo v0.0.0-20231122191601-2eb6f5408849/go.mod h1:wwzKIaam0XFmiWfTlvSvdKwq7CkxE9Tz5rIkz1KKDws=
+github.com/tmc/langchaingo v0.0.0-20231201210551-9508a34a2940 h1:5xGjlVbGLObhB5YijrKbioTDKuDEkbaSAsRBy+j4LhI=
+github.com/tmc/langchaingo v0.0.0-20231201210551-9508a34a2940/go.mod h1:WgJkGMb5Ac/WpD6YLo3zRAiHtALrgGnH42Hcu5Rs4/A=
 github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778/go.mod h1:2MuV+tbUrU1zIOPMxZ5EncGwgmMJsa+9ucAQZXxsObs=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavMF/ppJZNG9ZpyihvCd0w101no=
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJuqunuUZ/Dhy/avygyECGrLceyNeo4LiM=

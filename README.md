@@ -16,13 +16,19 @@ write test case is very boring and take a lot of time, so i create this tool to 
 you just run command
 
 ```shell
-dolpin generate --dir="." --mock-path="./mock" --mock-lib="gomock"
+dolpin generate -r="." --mock-path="./mock" --mock-lib="gomock"
+```
+
+if you want to generate test case for spesific dir
+    
+```shell    
+dolpin generate -r="." --dir="./user" --mock-path="./mock" --mock-lib="gomock"
 ```
 
 or for spesific function
 
 ```shell
-dolpin generate --dir="." --mock-path="./mock" --mock-lib="gomock" --func="TestFunc" --file="./somefolder/test.go"
+dolpin generate -r="." --mock-path="./mock" --mock-lib="gomock" --func="TestFunc" --file="./somefolder/test.go"
 ```
 
 
@@ -39,39 +45,55 @@ dolpin generate --dir="." --mock-path="./mock" --mock-lib="gomock"
 
 then we got prompt
 ``` text
-i have a function like this
+can u write unit test on golang with heights coverage and multi scenario for this code
 
-func CheckFunction(msg types.Message, check Coba) string {
+package check
+
+import (
+	"strconv"
+
+	"github.com/born2ngopi/example-dolpin/types"
+)
+
+type Coba struct {
+}
+
+type Check interface {
+	CheckFunction(msg types.Message, randNumber int) string
+}
+
+func NewCheck() Check {
+	return &Coba{}
+}
+
+func (c *Coba) CheckFunction(msg types.Message, randNumber int) string {
 
 	msg.Name = "CheckFunction"
 
-	return msg.Name
+	return msg.Name + strconv.Itoa(randNumber)
 }
 
 
-and i have a struct like this
-
+and i have some struct like this
 
 type Message struct {
-
-  Name string
-
-  Status string
-
+	Name string
+	Status string
 }
+from "github.com/born2ngopi/example-dolpin/types"
 
-type Coba struct {
+and i use mock gomock and the dir is github.com/born2ngopi/example-dolpin/mock
 
-  Name string
 
+i expect the unit test like this
+func Test_[function_name](t *testing.T) {
+
+	// add some preparation code here
+
+	// add schenario here with []struct
+
+	// looping schenario here and test the function
 }
-
-
-
-
-and i use mock gomock and the dir is ./mock
-
-
-can you write unit test with heights coverage and looping test case , So there can be looping a positive case and a negative case for this function . And only return to me the function unit test without package name and import package?
 ```
 
+if you have some idea to improve this tool or better prompt, please create issue or pull request
