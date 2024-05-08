@@ -40,59 +40,102 @@ with example code on [this](https://github.com/born2ngopi/example-dolpin)
 
 and if we run command
 ```shell
-dolpin generate --dir="." --mock-path="./mock" --mock-lib="gomock" --model="codegemma:7b"
+dolpin generate --dir="." --mock-path="./mocks" --mock-lib="gomock" --model="codegemma:7b"
 ```
 
 then we got prompt
 ``` text
+WRITE UNIT TEST GOLANG
+
 can u write unit test on golang with heights coverage and multi scenario for this code
 
-package check
+package service
 
 import (
-	"strconv"
+        "strconv"
 
-	"github.com/born2ngopi/example-dolpin/types"
+        "github.com/born2ngopi/example-dolpin/types"
 )
 
-type Coba struct {
+type service struct {
 }
 
-type Check interface {
-	CheckFunction(msg types.Message, randNumber int) string
+type Service interface {
+        Sum(a, b int) int
+        SumFromStr(data types.SumField) (int, error)
 }
 
-func NewCheck() Check {
-	return &Coba{}
+func New() Service {
+        return &service{}
 }
 
-func (c *Coba) CheckFunction(msg types.Message, randNumber int) string {
+func (s *service) Sum(a, b int) int {
+        return a + b
+}
 
-	msg.Name = "CheckFunction"
+func (s *service) SumFromStr(data types.SumField) (int, error) {
+        aInt, err := strconv.Atoi(data.A)
+        if err != nil {
+                return 0, err
+        }
 
-	return msg.Name + strconv.Itoa(randNumber)
+        bInt, err := strconv.Atoi(data.B)
+        if err != nil {
+                return 0, err
+        }
+
+        return aInt + bInt, nil
 }
 
 
 and i have some struct like this
 
-type Message struct {
-	Name string
-	Status string
+
+type SumField struct {
+
+        A string
+
+        B string
+
 }
 from "github.com/born2ngopi/example-dolpin/types"
 
-and i use mock gomock and the dir is github.com/born2ngopi/example-dolpin/mock
-
+and i use mock gomock and the dir is github.com/born2ngopi/example-dolpin/mocks
 
 i expect the unit test like this
 func Test_[function_name](t *testing.T) {
 
-	// add some preparation code here
+        // add some preparation code here include mock, var, and etc
 
-	// add schenario here with []struct
+        // add schenario here with []struct
+        /*
+                example:
+                type arg struct {
+                        // this field must be parameter function
+                }
 
-	// looping schenario here and test the function
+                tests := []struct{
+                        name string
+                        arg arg // arg is parameter function,
+                        wantError error
+                        wantResponse [response function]
+                        prepare func([parameter function]) // prepare for expected mock function
+                }{
+                        {
+                                // fill hire with success scenario and posibility negative/error scenario
+                        }
+                }
+        /*
+
+        // looping schenario here and test the function
+        /*
+                example:
+                for _, tt := range tests {
+                        t.Run(tt.name, func(t *testing.T){
+                                // some test logic here
+                        })
+                }
+        /*
 }
 ```
 

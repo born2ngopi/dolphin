@@ -14,7 +14,6 @@ import (
 
 // GenerateTest is used to auto generate test for golang code.
 func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, model string) error {
-	// check user have goimports tools
 
 	logger := pterm.DefaultLogger.
 		WithLevel(pterm.LogLevelTrace)
@@ -32,13 +31,16 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 		},
 	}
 
+	// check user have goimports tools
 	checkGoImports(projectDir)
 
 	_getDir.Info(fmt.Sprintf("Modulepath: %s | Projectdir : %s", modulePath, projectDir))
 	//if rootDir != "." {
 	dir = filepath.Join(projectDir, dir)
 	fileDir = filepath.Join(projectDir, fileDir)
-	mockDir = filepath.Join(modulePath, mockDir)
+	mockPath := filepath.Join(modulePath, mockDir)
+	mockDir = filepath.Join(projectDir, mockDir)
+	gitDir := filepath.Join(projectDir, "./.git")
 	output = filepath.Join(projectDir, output)
 
 	if funcName != "" {
@@ -51,7 +53,7 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 
 		logger.Info("reading file to prompt")
 		// genereate singgle unit test
-		_prompt, packageName, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockDir)
+		_prompt, packageName, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockPath)
 		if err != nil {
 			return err
 		}
@@ -81,10 +83,9 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 
 	multiSpinner.UpdateText("Generate code completion....")
 	// walk through the directory
-	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, errArg error) error {
 		// skip mocks folder
-		if path == mockDir {
+		if path == mockDir || path == gitDir {
 			return filepath.SkipDir
 		}
 
@@ -111,7 +112,7 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 			return err
 		}
 
-		//debug prompt
+		// debug prompt
 		// fmt.Println(promptStr)
 		// return nil
 
