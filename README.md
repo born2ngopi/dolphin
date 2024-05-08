@@ -1,7 +1,5 @@
 # Dolpin 
 
-> still development
-
 Dolpin is auto generate test case and very simple to use it
 
 
@@ -13,6 +11,8 @@ Hardware for testing:
 * Processor AMD Ryzen 7 7840HS
 * GPU Nvidia RTX 4050 6GB laptop
 * RAM 16GB
+
+Source code for test [here](https://github.com/born2ngopi/example-dolpin) and result in [here](https://github.com/born2ngopi/example-dolpin/tree/generate-test)
 
 [![WATCH](https://img.youtube.com/vi/oRNMYKI5nR8/hqdefault.jpg)](https://youtu.be/oRNMYKI5nR8)
 
