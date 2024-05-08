@@ -7,6 +7,16 @@ Dolpin is auto generate test case and very simple to use it
 
 It's generate with llama on local machine. The process will be depend with your hardware
 
+## Demo
+
+Hardware for testing:
+* Processor AMD Ryzen 7 7840HS
+* GPU Nvidia RTX 4050 6GB laptop
+* RAM 16GB
+
+[![WATCH](https://img.youtube.com/vi/oRNMYKI5nR8/hqdefault.jpg)](https://youtu.be/oRNMYKI5nR8)
+
+
 ## Problem & Motivation
 
 write test case is very boring and take a lot of time, so i create this tool to generate test case
