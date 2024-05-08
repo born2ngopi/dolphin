@@ -40,7 +40,7 @@ with example code on [this](https://github.com/born2ngopi/example-dolpin)
 
 and if we run command
 ```shell
-dolpin generate --dir="." --mock-path="./mock" --mock-lib="gomock"
+dolpin generate --dir="." --mock-path="./mock" --mock-lib="gomock" --model="codegemma:7b"
 ```
 
 then we got prompt

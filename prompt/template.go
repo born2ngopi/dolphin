@@ -6,7 +6,9 @@ import (
 )
 
 const (
-	PROMPT = `can u write unit test on golang with heights coverage and multi scenario for this code
+	PROMPT = `WRITE UNIT TEST GOLANG
+
+can u write unit test on golang with heights coverage and multi scenario for this code
 
 {{.SourceCode}}
 
@@ -31,11 +33,37 @@ and i use mock {{.Name}} and the dir is {{.Dir}}
 i expect the unit test like this
 func Test_[function_name](t *testing.T) {
 
-	// add some preparation code here
+	// add some preparation code here include mock, var, and etc
 
 	// add schenario here with []struct
+	/*
+		example:
+		type arg struct {
+			// this field must be parameter function
+		}
+
+		tests := []struct{
+			name string
+			arg arg // arg is parameter function, 
+			wantError error
+			wantResponse [response function]
+			prepare func([parameter function]) // prepare for expected mock function
+		}{
+			{
+				// fill hire with success scenario and posibility negative/error scenario
+			}
+		}
+	/*
 
 	// looping schenario here and test the function
+	/*
+		example:
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T){
+				// some test logic here
+			})
+		}
+	/*
 }
 	`
 )

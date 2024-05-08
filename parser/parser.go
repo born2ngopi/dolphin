@@ -14,6 +14,8 @@ import (
 
 // GenerateTest is used to auto generate test for golang code.
 func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, model string) error {
+	// check user have goimports tools
+
 	logger := pterm.DefaultLogger.
 		WithLevel(pterm.LogLevelTrace)
 
@@ -29,6 +31,8 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 			Text:  " USING ",
 		},
 	}
+
+	checkGoImports(projectDir)
 
 	_getDir.Info(fmt.Sprintf("Modulepath: %s | Projectdir : %s", modulePath, projectDir))
 	//if rootDir != "." {
@@ -78,6 +82,12 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 	multiSpinner.UpdateText("Generate code completion....")
 	// walk through the directory
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+
+		// skip mocks folder
+		if path == mockDir {
+			return filepath.SkipDir
+		}
+
 		// check if is not file and not .go extention
 		if info.IsDir() || filepath.Ext(path) != ".go" {
 			return nil
@@ -101,8 +111,9 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 			return err
 		}
 
-		fmt.Println(promptStr)
-		return nil
+		//debug prompt
+		// fmt.Println(promptStr)
+		// return nil
 
 		outputPath := strings.Replace(path, ".go", "_test.go", 1)
 
@@ -203,4 +214,19 @@ func getDir(dir string) (modulePath string, projectDir string, err error) {
 	projectDir = strings.TrimSpace(string(output))
 
 	return modulePath, projectDir, nil
+}
+
+func checkGoImports(projectDir string) {
+	cmd := exec.Command("goimports", "-w", projectDir)
+	err := cmd.Run()
+	if err != nil {
+
+		fmt.Printf(`Dolpin need goimports for importing package after generate
+You can install manualy by visit this site
+
+https://pkg.go.dev/golang.org/x/tools/cmd/goimports
+`)
+		os.Exit(1)
+
+	}
 }

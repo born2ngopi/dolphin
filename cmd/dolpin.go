@@ -37,9 +37,9 @@ func Execute() {
 	generateCmd.Flags().StringP("func", "f", "", "Specify the function name")
 	generateCmd.Flags().StringP("file", "F", "", "Specify the file directory")
 	generateCmd.Flags().StringP("mock-lib", "m", "", "Specify the mock library")
-	generateCmd.Flags().StringP("mock-path", "M", "./mocs", "Specify the mock path")
+	generateCmd.Flags().StringP("mock-path", "M", "./mocks", "Specify the mock path")
 	generateCmd.Flags().StringP("output", "o", "", "Specify the output directory")
-	generateCmd.Flags().String("model", "llama2", "Specify the model")
+	generateCmd.Flags().String("model", "codegemma:7b", "Specify the model")
 	generateCmd.Flags().StringP("root-dir", "r", ".", "Specify the root directory")
 
 	rootCmd.AddCommand(generateCmd)
