@@ -1,6 +1,6 @@
 # Dolpin 
 
-Dolpin is auto generate test case and very simple to use it
+Dolpin is auto generate test case for golang and very simple to use it.
 
 
 It's generate with llama on local machine. The process will be depend with your hardware
