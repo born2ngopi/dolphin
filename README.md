@@ -5,7 +5,7 @@
 Dolpin is auto generate test case and very simple to use it
 
 
-it's generate with llama on local machine 
+It's generate with llama on local machine. The process will be depend with your hardware
 
 ## Problem & Motivation
 

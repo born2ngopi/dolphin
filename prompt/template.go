@@ -61,6 +61,10 @@ func Test_[function_name](t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T){
 				// some test logic here
+
+				// check if wantError not nil then check error message is same or not
+				// if wantError nil check result function
+				// check result and error with assert
 			})
 		}
 	/*

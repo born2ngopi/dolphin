@@ -25,7 +25,7 @@ func Generate(prompt, model string) (string, error) {
 	ctx := context.Background()
 
 	completion, err := llm.Call(ctx, prompt,
-		llms.WithTemperature(0.8),
+		llms.WithTemperature(1),
 		// llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
 		// 	fmt.Print(string(chunk))
 		// 	return nil
