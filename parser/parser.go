@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/born2ngopi/dolpin/generator"
+	"github.com/born2ngopi/dolphin/generator"
 	"github.com/pterm/pterm"
 	"golang.org/x/mod/modfile"
 )
@@ -305,7 +305,7 @@ func checkGoImports(projectDir string) {
 	err := cmd.Run()
 	if err != nil {
 
-		fmt.Printf(`Dolpin need goimports for importing package after generate
+		fmt.Printf(`Dolphin need goimports for importing package after generate
 You can install manualy by visit this site
 
 https://pkg.go.dev/golang.org/x/tools/cmd/goimports

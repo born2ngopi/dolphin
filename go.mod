@@ -1,4 +1,4 @@
-module github.com/born2ngopi/dolpin
+module github.com/born2ngopi/dolphin
 
 go 1.21
 

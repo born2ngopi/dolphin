@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/born2ngopi/dolpin/parser"
+	"github.com/born2ngopi/dolphin/parser"
 	"github.com/spf13/cobra"
 )
 
 func Execute() {
-	rootCmd := &cobra.Command{Use: "dolpin"}
+	rootCmd := &cobra.Command{Use: "dolphin"}
 
 	generateCmd := &cobra.Command{
 		Use:   "generate",

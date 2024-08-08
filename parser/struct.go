@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/born2ngopi/dolpin/prompt"
+	"github.com/born2ngopi/dolphin/prompt"
 )
 
 // variable Struct is a list of struct on the code

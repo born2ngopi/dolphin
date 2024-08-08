@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/born2ngopi/dolpin/prompt"
+	"github.com/born2ngopi/dolphin/prompt"
 )
 
 type Config struct {

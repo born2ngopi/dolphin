@@ -1,6 +1,6 @@
 package main
 
-import "github.com/born2ngopi/dolpin/cmd"
+import "github.com/born2ngopi/dolphin/cmd"
 
 func main() {
 	cmd.Execute()
