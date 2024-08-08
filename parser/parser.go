@@ -12,14 +12,31 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+var multiSpinner *pterm.SpinnerPrinter
+
+type Option struct {
+	RootDir     string
+	Dir         string
+	FuncName    string
+	FileDir     string
+	MockLib     string
+	MockDir     string
+	Output      string
+	Model       string
+	Llm         string
+	LlmHost     string
+	LlmToken    string
+	DebugPrompt bool
+}
+
 // GenerateTest is used to auto generate test for golang code.
-func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, model string) error {
+func GenerateTest(opt Option) error {
 
 	logger := pterm.DefaultLogger.
 		WithLevel(pterm.LogLevelTrace)
 
 	_getDir, _ := pterm.DefaultSpinner.Start("Getting directory")
-	modulePath, projectDir, err := getDir(rootDir)
+	modulePath, projectDir, err := getDir(opt.RootDir)
 	if err != nil {
 		return err
 	}
@@ -36,14 +53,14 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 
 	_getDir.Info(fmt.Sprintf("Modulepath: %s | Projectdir : %s", modulePath, projectDir))
 	//if rootDir != "." {
-	dir = filepath.Join(projectDir, dir)
-	fileDir = filepath.Join(projectDir, fileDir)
-	mockPath := filepath.Join(modulePath, mockDir)
-	mockDir = filepath.Join(projectDir, mockDir)
+	dir := filepath.Join(projectDir, opt.Dir)
+	fileDir := filepath.Join(projectDir, opt.FileDir)
+	mockPath := filepath.Join(modulePath, opt.MockDir)
+	mockDir := filepath.Join(projectDir, opt.MockDir)
 	gitDir := filepath.Join(projectDir, "./.git")
-	output = filepath.Join(projectDir, output)
+	output := filepath.Join(projectDir, opt.Output)
 
-	if funcName != "" {
+	if opt.FuncName != "" {
 
 		err := prepareStruct(projectDir)
 		if err != nil {
@@ -53,7 +70,18 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 
 		logger.Info("reading file to prompt")
 		// genereate singgle unit test
-		_prompt, packageName, err := readFileToPrompt(filepath.Join(projectDir, fileDir), funcName, modulePath, dir, mockLib, mockPath)
+
+		conf := Config{
+			Path:          fileDir,
+			FuncName:      opt.FuncName,
+			ModulePath:    modulePath,
+			Dir:           dir,
+			MockLib:       opt.MockLib,
+			MockDir:       mockPath,
+			ExistingTests: nil,
+		}
+
+		_prompt, packageName, err := readFileToPrompt(conf)
 		if err != nil {
 			return err
 		}
@@ -63,7 +91,12 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 			return err
 		}
 
-		err = generateAddWriteTestFile(promptStr, model, output, packageName)
+		if opt.DebugPrompt {
+			fmt.Println(promptStr)
+			return nil
+		}
+
+		err = generateAddWriteTestFile(promptStr, output, packageName, opt)
 		if err != nil {
 			return err
 		}
@@ -73,7 +106,7 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 
 	}
 
-	multiSpinner, _ := pterm.DefaultSpinner.Start("Generate Multi Unit Test ....")
+	multiSpinner, _ = pterm.DefaultSpinner.Start("Generate Multi Unit Test ....")
 
 	multiSpinner.UpdateText("preparing struct .....")
 	err = prepareStruct(projectDir)
@@ -81,7 +114,38 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 		return err
 	}
 
+	multiSpinner.UpdateText("Check existing unit test....")
+
+	// get list of existing test function
+	var existingTests = make(map[string]string)
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, errArg error) error {
+		// skip mocks and .git folder
+		if path == mockDir || path == gitDir {
+			return filepath.SkipDir
+		}
+
+		// only read test file
+		if !strings.Contains(path, "_test.go") {
+			return nil
+		}
+
+		funcNames := getListFunctionName(path)
+		if len(funcNames) != 0 {
+			for _, name := range funcNames {
+				existingTests[name] = path
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		multiSpinner.Fail("Failed to generate test")
+		return err
+	}
+
 	multiSpinner.UpdateText("Generate code completion....")
+
+	multiSpinner.Stop()
 	// walk through the directory
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, errArg error) error {
 		// skip mocks folder
@@ -97,8 +161,19 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 		if strings.Contains(path, "_test.go") {
 			return nil
 		}
+
+		conf := Config{
+			Path:          path,
+			FuncName:      "",
+			ModulePath:    modulePath,
+			Dir:           dir,
+			MockLib:       opt.MockLib,
+			MockDir:       mockPath,
+			ExistingTests: existingTests,
+		}
+
 		// parse the file
-		_prompt, packageName, err := readFileToPrompt(path, "", modulePath, dir, mockLib, mockDir)
+		_prompt, packageName, err := readFileToPrompt(conf)
 		if err != nil {
 			return err
 		}
@@ -112,13 +187,15 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 			return err
 		}
 
-		// debug prompt
-		// fmt.Println(promptStr)
-		// return nil
+		if opt.DebugPrompt {
+			// debug prompt
+			fmt.Println(promptStr)
+			return nil
+		}
 
 		outputPath := strings.Replace(path, ".go", "_test.go", 1)
 
-		err = generateAddWriteTestFile(promptStr, model, outputPath, packageName)
+		err = generateAddWriteTestFile(promptStr, outputPath, packageName, opt)
 		if err != nil {
 			return err
 		}
@@ -144,8 +221,14 @@ func GenerateTest(rootDir, dir, funcName, fileDir, mockLib, mockDir, output, mod
 	return nil
 }
 
-func generateAddWriteTestFile(prompt, model, outputPath, packageName string) error {
-	codeCompletion, err := generator.Generate(prompt, model)
+func generateAddWriteTestFile(prompt, outputPath, packageName string, opt Option) error {
+	codeCompletion, err := generator.Generate(generator.Option{
+		Prompt: prompt,
+		Model:  opt.Model,
+		Llm:    opt.Llm,
+		Token:  opt.LlmToken,
+		Host:   opt.LlmHost,
+	})
 	if err != nil {
 		return err
 	}

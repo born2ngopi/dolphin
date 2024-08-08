@@ -14,9 +14,47 @@ import (
 	"github.com/born2ngopi/dolpin/prompt"
 )
 
-func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) (promptResult prompt.Template, packageName string, err error) {
+type Config struct {
+	Path          string
+	FuncName      string
+	ModulePath    string
+	Dir           string
+	MockLib       string
+	MockDir       string
+	ExistingTests map[string]string
+}
+
+// getListFunctionName is a function to get all function name from a file
+// that start with "Test" prefix
+// example:
+// func TestHello(t *testing.T) {}
+// func TestWorld(t *testing.T) {}
+// then this function will return
+// []string{"TestHello", "TestWorld"}
+func getListFunctionName(path string) []string {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var funcNames []string
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+
+			if strings.HasPrefix(funcDecl.Name.Name, "Test") {
+				funcNames = append(funcNames, funcDecl.Name.Name)
+			}
+		}
+	}
+
+	return funcNames
+}
+
+func readFileToPrompt(conf Config) (promptResult prompt.Template, packageName string, err error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, conf.Path, nil, parser.ParseComments)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,6 +70,7 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 	// prepare import path
 	importPath := make(map[string]string)
 
+	// read all import path
 	for _, decl := range file.Decls {
 		if genDecl, ok := decl.(*ast.GenDecl); ok {
 			if genDecl.Tok == token.IMPORT {
@@ -49,14 +88,46 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 		}
 	}
 
-	var isAnyFunc bool
-	// check function
+	var isAnyFunc, skipAll bool
+	// check function'
+fileLoop:
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
 			isAnyFunc = true
 
-			if funcName != "" && funcName != funcDecl.Name.Name {
+			if conf.FuncName != "" && conf.FuncName != funcDecl.Name.Name {
 				continue
+			}
+
+			if conf.FuncName == "" && conf.ExistingTests != nil {
+				// if funcName not set,
+				// it's posibility from walk dir
+				// we wan check if function is already have unit test or not
+				for name, path := range conf.ExistingTests {
+					if strings.Contains(name, funcDecl.Name.Name) {
+						if skipAll {
+							continue fileLoop
+						}
+						multiSpinner.Stop()
+						fmt.Printf(
+							"Function %s already have unit test on %s,\ndo you still want to generate? [y/N]\nor press [s] for skip all\n",
+							funcDecl.Name.Name,
+							path,
+						)
+						var stillGen string
+						fmt.Scanln(&stillGen)
+
+						if stillGen == "y" || stillGen == "Y" {
+							multiSpinner.Start("Generate code completion....")
+							break
+						} else if stillGen == "s" || stillGen == "S" {
+							skipAll = true
+							continue fileLoop
+						} else {
+							continue fileLoop
+						}
+					}
+				}
 			}
 
 			if funcDecl.Type.Params != nil {
@@ -96,8 +167,8 @@ func readFileToPrompt(path, funcName, modulePath, dir, mockLib, mockDir string) 
 			}
 
 			promptResult.Mock = prompt.Mock{
-				Name: mockLib,
-				Dir:  mockDir,
+				Name: conf.MockLib,
+				Dir:  conf.MockDir,
 			}
 
 		}
@@ -114,7 +185,11 @@ func getStructFromImportPackage(pathDir string, importPath string, selExp *ast.S
 
 	var structs []prompt.Struct
 
-	err := filepath.Walk(pathDir, func(path string, info os.FileInfo, _ error) error {
+	err := filepath.Walk(pathDir, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			return err
+		}
 
 		if info.IsDir() || filepath.Ext(path) != ".go" {
 			return nil
@@ -253,13 +328,12 @@ func getStructFromStatement(decl ast.Decl, importPath map[string]string) ([]prom
 func findStructFields(file *ast.File, structName string) map[string]string {
 	structFieldMap := make(map[string]string)
 
-	// Inspeksi semua deklarasi
 	for _, decl := range file.Decls {
 		if genDecl, ok := decl.(*ast.GenDecl); ok {
 			for _, spec := range genDecl.Specs {
 				if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 					if typeSpec.Name.Name == structName {
-						// Jika ditemukan struct, inspeksi field-nya
+
 						if structType, ok := typeSpec.Type.(*ast.StructType); ok {
 							for _, field := range structType.Fields.List {
 								for _, name := range field.Names {

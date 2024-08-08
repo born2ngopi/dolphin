@@ -27,7 +27,7 @@ from {{.From}}
 {{end}}
 
 {{with .Mock}}
-and i use mock {{.Name}} and the dir is {{.Dir}}
+and i use mock {{.Name}} and the dir is {{.Dir}} and dont mock standard library
 {{end}}
 
 i expect the unit test like this
