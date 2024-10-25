@@ -1,18 +1,21 @@
 package parser
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/born2ngopi/dolphin/prompt"
 )
 
 // variable Struct is a list of struct on the code
 var Struct = make(map[string]prompt.Struct)
+var Interface = make(map[string]prompt.Interface)
 
 func prepareStruct(dir string) error {
 
@@ -53,12 +56,33 @@ func prepareStruct(dir string) error {
 									fieldName := name.Name
 									fieldType := getTypeString(field.Type)
 									_struct.Fields = append(_struct.Fields, prompt.StructField{
-										Name: fieldName,
-										Type: fieldType,
+										Name:    fieldName,
+										Type:    fieldType,
+										TypeExp: field.Type,
 									})
 								}
 							}
 							Struct[packageName+structName] = _struct
+						} else if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+							interfaceName := typeSpec.Name.Name
+							_interface := prompt.Interface{
+								Name: interfaceName,
+							}
+
+							for _, method := range interfaceType.Methods.List {
+								methodName := method.Names[0].Name
+
+								// check parameter on method
+								// _type, ok := method.Type.(*ast.FuncType)
+
+								methodType := getTypeString(method.Type)
+
+								m := strings.ReplaceAll(methodType, "func", fmt.Sprintf("func %s", methodName))
+								// fmt.Println("======> ", m)
+								_interface.Methods = append(_interface.Methods, m)
+							}
+
+							Interface[packageName+interfaceName] = _interface
 						}
 					}
 				}

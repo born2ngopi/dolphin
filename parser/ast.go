@@ -130,6 +130,36 @@ fileLoop:
 				}
 			}
 
+			// check this function is method or not
+			if funcDecl.Recv != nil && len(funcDecl.Recv.List) > 0 {
+				promptResult.IsMethod = true
+				if starExpr, ok := funcDecl.Recv.List[0].Type.(*ast.StarExpr); ok {
+					if ident, ok := starExpr.X.(*ast.Ident); ok {
+						if _struct, ok := Struct[packageName+ident.Name]; ok {
+							promptResult.StuctMethod = _struct
+
+							for _, field := range _struct.Fields {
+
+								names := strings.Split(field.Type, ".")
+								var packageInterfaceName, interfaceName string
+								if len(names) > 1 {
+									packageInterfaceName = names[0]
+									interfaceName = names[1]
+								} else {
+									packageInterfaceName = packageName
+									interfaceName = names[0]
+								}
+								_interface, ok := Interface[packageInterfaceName+interfaceName]
+								if ok {
+									promptResult.InterfaceMethod = append(promptResult.InterfaceMethod, _interface)
+								}
+
+							}
+						}
+					}
+				}
+			}
+
 			if funcDecl.Type.Params != nil {
 				for _, field := range funcDecl.Type.Params.List {
 					// check if type variable is struct

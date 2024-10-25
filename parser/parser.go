@@ -15,18 +15,18 @@ import (
 var multiSpinner *pterm.SpinnerPrinter
 
 type Option struct {
-	RootDir     string
-	Dir         string
-	FuncName    string
-	FileDir     string
-	MockLib     string
-	MockDir     string
-	Output      string
-	Model       string
-	Llm         string
-	LlmHost     string
-	LlmToken    string
-	DebugPrompt bool
+	RootDir     string `yaml:"root-dir"`
+	Dir         string `yaml:"dir"`
+	FuncName    string `yaml:"func"`
+	FileDir     string `yaml:"file"`
+	MockLib     string `yaml:"mock-lib"`
+	MockDir     string `yaml:"mock-path"`
+	Output      string `yaml:"output"`
+	Model       string `yaml:"model"`
+	Llm         string `yaml:"llm"`
+	LlmHost     string `yaml:"llm-host"`
+	LlmToken    string `yaml:"llm-token"`
+	DebugPrompt bool   `yaml:"debug"`
 }
 
 // GenerateTest is used to auto generate test for golang code.
@@ -144,8 +144,6 @@ func GenerateTest(opt Option) error {
 	}
 
 	multiSpinner.UpdateText("Generate code completion....")
-
-	multiSpinner.Stop()
 	// walk through the directory
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, errArg error) error {
 		// skip mocks folder
@@ -218,6 +216,8 @@ func GenerateTest(opt Option) error {
 	}
 
 	multiSpinner.Success("Success generate test")
+	multiSpinner.Stop()
+	fmt.Println()
 	return nil
 }
 
